@@ -12,9 +12,9 @@ namespace JwtWebAPi.Controllers
     {
         private IRegisterService _registerService;
         private ILoginService _loginService;
-        public static User user = new User() {  Username = "string"};
+        public static User user = new User();
 
-        public AuthController(IRegisterService registerService, ILoginService loginService)
+        public AuthController( IRegisterService registerService, ILoginService loginService)
         {
             _registerService = registerService;
             _loginService = loginService;
@@ -27,23 +27,24 @@ namespace JwtWebAPi.Controllers
             {
               return BadRequest("User not found");
             }
-            if (_loginService.VerifyPasswordHash(request.Password, user.PasswordHash , user.passwordSalt))
+            if (!_loginService.VerifyPasswordHash(request.Password, user.PasswordHash , user.passwordSalt))
             {
                 return BadRequest("Invalid Password");
             }
-            return Ok("My Token");
+            var token = _loginService.CreateToken(user);
+
+            return Ok(token);
         }
 
         [HttpPost("register")]
         public async Task<ActionResult<User>> Register(UserDto request)
         {
             _registerService.CreatePasswordHash(request.Password, out byte[] passwordHash, out byte[] passwordSalt);
-            var user = new User()
-            {
-                 Username = request.Username,
-                 PasswordHash = passwordHash,
-                 passwordSalt = passwordSalt
-            };
+
+            user.Username = request.Username;
+            user.PasswordHash = passwordHash;
+            user.passwordSalt = passwordSalt;
+            
             return Ok(user);    
         }
     }
